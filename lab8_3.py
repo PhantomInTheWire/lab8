@@ -14,20 +14,16 @@ class GbikeRentalModified:
         self.parking_threshold = 10
         self.parking_cost = 4
         
-        # Poisson parameters
         self.lambda_req1 = 3
         self.lambda_req2 = 4
         self.lambda_ret1 = 3
         self.lambda_ret2 = 2
         
-        # Precompute Poisson probabilities to save time
         self.poisson_cache = {}
         self.poisson_upper_bound = 11
         
-        # State space: (bikes_at_1, bikes_at_2)
         self.states = [(i, j) for i in range(self.max_bikes + 1) for j in range(self.max_bikes + 1)]
         
-        # Initialize Value function and Policy
         self.V = np.zeros((self.max_bikes + 1, self.max_bikes + 1))
         self.policy = np.zeros((self.max_bikes + 1, self.max_bikes + 1), dtype=int)
         
@@ -40,32 +36,21 @@ class GbikeRentalModified:
         return self.poisson_cache[key]
 
     def expected_return(self, state, action):
-        # Calculate move cost
-        # Modified: Employee shuttles 1 bike from Location 1 to 2 for free
-        # Positive action: Move from 1 to 2
-        # Negative action: Move from 2 to 1
         
         if action > 0:
-            # Moving from 1 to 2
-            # First bike is free (shuttle)
             cost = max(0, action - 1) * self.move_cost
         else:
-            # Moving from 2 to 1
             cost = abs(action) * self.move_cost
         
-        # Bikes available after move
         b1 = int(state[0] - action)
         b2 = int(state[1] + action)
         
-        # Check validity of action (can't have negative bikes)
         if b1 < 0 or b2 < 0:
             return -float('inf')
             
-        # Cap at 20
         b1 = min(b1, self.max_bikes)
         b2 = min(b2, self.max_bikes)
         
-        # Add parking cost if more than 10 bikes at either location
         if b1 > self.parking_threshold:
             cost += self.parking_cost
         if b2 > self.parking_threshold:
@@ -73,12 +58,10 @@ class GbikeRentalModified:
         
         expected_reward = -cost
         
-        # Expected Reward from rentals
         expected_rentals1 = sum(self.poisson(k, self.lambda_req1) * min(b1, k) for k in range(self.poisson_upper_bound))
         expected_rentals2 = sum(self.poisson(k, self.lambda_req2) * min(b2, k) for k in range(self.poisson_upper_bound))
         total_reward = -cost + self.rental_reward * (expected_rentals1 + expected_rentals2)
         
-        # Expected Next Value
         prob_next_s1 = np.zeros(self.max_bikes + 1)
         for req in range(self.poisson_upper_bound):
             p_req = self.poisson(req, self.lambda_req1)
@@ -154,7 +137,6 @@ class GbikeRentalModified:
         return self.V, self.policy
 
 def plot_results(V, policy, filename_prefix="gbike_modified"):
-    # 1. Policy Heatmap
     fig, ax = plt.subplots(figsize=(10, 8))
     sns.heatmap(policy, annot=True, fmt="d", cmap="RdBu_r", cbar=True,
                 linewidths=0.5, linecolor='gray', square=True,
@@ -170,7 +152,6 @@ def plot_results(V, policy, filename_prefix="gbike_modified"):
     plt.close()
     print(f"Saved policy heatmap to {filename_prefix}_policy.png")
 
-    # 2. Value Function Heatmap
     fig, ax = plt.subplots(figsize=(10, 8))
     sns.heatmap(V, annot=False, cmap="viridis", cbar=True,
                 linewidths=0, square=True,
@@ -185,7 +166,6 @@ def plot_results(V, policy, filename_prefix="gbike_modified"):
     plt.close()
     print(f"Saved value heatmap to {filename_prefix}_value_heatmap.png")
 
-    # 3. Value Function 3D Plot
     fig = plt.figure(figsize=(12, 9))
     ax = fig.add_subplot(111, projection='3d')
     x = np.arange(V.shape[1])

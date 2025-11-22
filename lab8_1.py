@@ -8,10 +8,6 @@ class GridWorld:
         self.cols = 4
         self.grid = np.zeros((self.rows, self.cols))
         self.reward_step = reward_step
-        self.gamma = 1.0  # Undiscounted as per typical grid world examples unless specified otherwise, usually 1.0 for finite horizon or with terminal states. Problem doesn't specify, assuming 1.0 or close to 1.
-        # Actually, for value iteration to converge with negative rewards and no discount, we rely on terminal states.
-        # Russell & Norvig usually use gamma=1 for this example or 0.99. Let's use 0.99 to be safe, or 1.0 if guaranteed to terminate.
-        # Given the negative rewards, it will try to terminate.
         self.gamma = 1.0 
         
         self.actions = ['U', 'D', 'L', 'R']
@@ -19,7 +15,6 @@ class GridWorld:
         self.walls = {(1, 1)}
         self.start_state = (2, 0)
         
-        # Transition probabilities: 0.8 intended, 0.1 left, 0.1 right
         self.transition_probs = {
             'U': {'U': 0.8, 'L': 0.1, 'R': 0.1},
             'D': {'D': 0.8, 'L': 0.1, 'R': 0.1},
@@ -48,9 +43,7 @@ class GridWorld:
             return r, c
 
     def value_iteration(self, epsilon=1e-4):
-        # Initialize utilities
         U = np.zeros((self.rows, self.cols))
-        # Set terminal states
         for (r, c), val in self.terminals.items():
             U[r, c] = val
             
@@ -112,20 +105,16 @@ class GridWorld:
 def plot_results(U, policy, reward, title_suffix=""):
     fig, ax = plt.subplots(figsize=(10, 7))
     
-    # Create a mask for the wall
     mask = np.zeros_like(U, dtype=bool)
     mask[1, 1] = True
     
-    # Plot heatmap using seaborn with improved styling
     sns.heatmap(U, annot=False, cmap="RdYlGn", mask=mask, cbar=True,
                 linewidths=2, linecolor='black', square=True, 
                 cbar_kws={'label': 'Value'}, vmin=U[~mask].min(), vmax=U[~mask].max())
     
-    # Add value annotations and terminal state labels
     for r in range(U.shape[0]):
         for c in range(U.shape[1]):
             if mask[r, c]:
-                # Wall - fill with gray
                 ax.add_patch(plt.Rectangle((c, r), 1, 1, fill=True, color='gray', linewidth=2, edgecolor='black'))
                 ax.text(c + 0.5, r + 0.5, 'WALL', ha='center', va='center', 
                        fontweight='bold', fontsize=10, color='white')
@@ -147,11 +136,9 @@ def plot_results(U, policy, reward, title_suffix=""):
                        fontsize=9, color='black')
                 continue
             
-            # Value text at top of cell
             ax.text(c + 0.5, r + 0.25, f'{U[r, c]:.3f}', ha='center', va='center',
                    fontsize=10, color='black', fontweight='bold')
             
-            # Policy arrow at bottom of cell
             action = policy[r, c]
             arrow_props = dict(arrowstyle='->', lw=2.5, color='blue')
             
@@ -173,13 +160,11 @@ def plot_results(U, policy, reward, title_suffix=""):
     plt.xlabel('Column', fontsize=12, fontweight='bold')
     plt.ylabel('Row', fontsize=12, fontweight='bold')
     
-    # Set tick labels
     ax.set_xticklabels(range(U.shape[1]))
     ax.set_yticklabels(range(U.shape[0]))
     
     plt.tight_layout()
     
-    # Create descriptive filename
     if reward < 0:
         filename = f"gridworld_step_cost_neg{abs(reward)}.png"
     else:

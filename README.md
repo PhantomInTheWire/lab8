@@ -1,36 +1,19 @@
-# Lab 8: Markov Decision Process and Dynamic Programming
+# Lab 8: MDP and Dynamic Programming
 
-Solutions for Lab Assignment 8 covering MDP and Reinforcement Learning.
+Solutions for Markov Decision Process and Reinforcement Learning assignment.
 
 ## Problems
 
-### Problem 1: Grid World Value Iteration ([lab8_1.py](lab8_1.py))
-4×3 stochastic grid world with Value Iteration algorithm. Solved for 5 different step costs.
+1. **Grid World Value Iteration** - `lab8_1.py`
+2. **Gbike Rental (Original)** - `lab8_2.py`
+3. **Gbike Rental (Modified)** - `lab8_3.py`
 
-### Problem 2: Gbike Rental - Original ([lab8_2.py](lab8_2.py))
-Policy Iteration for bicycle rental inventory management with Poisson-distributed demands.
-
-### Problem 3: Gbike Rental - Modified ([lab8_3.py](lab8_3.py))
-Extended version with free employee shuttle and parking overflow costs.
-
-## Running
+## Usage
 
 ```bash
-# Activate virtual environment
 source .venv/bin/activate
-
-# Run individual problems
 python lab8_1.py
-python lab8_2.py
-python lab8_3.py
 ```
 
-## Visualizations
+Outputs saved to `visualizations/`
 
-All outputs are saved in the `visualizations/` directory.
-
-## Dependencies
-
-- numpy
-- matplotlib
-- seaborn
