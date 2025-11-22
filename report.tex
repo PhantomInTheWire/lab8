@@ -1,0 +1,170 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{Lab Assignment 8: Markov Decision Processes and Dynamic Programming}
+
+\author{\IEEEauthorblockN{Karan Haresh Lokchandani}
+\IEEEauthorblockA{\textit{Computer Science and Engineering} \\
+\textit{IIIT Vadodara}\\
+202351055@iiitvadodara.ac.in}
+}
+
+\maketitle
+
+\begin{abstract}
+This report presents implementations and analysis of three fundamental Markov Decision Process (MDP) problems using Dynamic Programming algorithms. We implement Value Iteration for a stochastic Grid World environment and Policy Iteration for a bicycle rental inventory management problem. Our results demonstrate the effectiveness of these algorithms in finding optimal policies under uncertainty. The Grid World experiments explore how varying step costs influence optimal behavior, while the Gbike Rental problems illustrate realistic constraints such as free employee shuttles and parking limitations. All implementations and visualizations are available on GitHub\footnote{\url{https://github.com/PhantomInTheWire/lab8}}.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Markov Decision Process, Dynamic Programming, Value Iteration, Policy Iteration, Reinforcement Learning
+\end{IEEEkeywords}
+
+\section{Introduction}
+Markov Decision Processes (MDPs) provide a mathematical framework for modeling decision-making in situations where outcomes are partly random and partly under the control of a decision-maker. MDPs are fundamental to Reinforcement Learning (RL) and are widely used in robotics, operations research, and automated planning.
+
+Dynamic Programming (DP) methods offer a powerful approach to solving MDPs when a complete model of the environment is available. Two key DP algorithms are:
+\begin{itemize}
+    \item \textbf{Value Iteration}: Iteratively updates value estimates until convergence.
+    \item \textbf{Policy Iteration}: Alternates between policy evaluation and improvement.
+\end{itemize}
+
+In this lab, we investigate three problems:
+\begin{enumerate}
+    \item \textbf{Grid World}: A 4$\times$3 stochastic navigation problem with varying step costs.
+    \item \textbf{Gbike Rental (Original)}: Inventory management with Poisson-distributed demands.
+    \item \textbf{Gbike Rental (Modified)}: Extended version with operational constraints.
+\end{enumerate}
+
+\section{Methodology}
+
+\subsection{Grid World Value Iteration}
+The Grid World is a classic RL environment consisting of a 4$\times$3 grid with:
+\begin{itemize}
+    \item \textbf{Terminal States}: +1 reward at (0,3) and -1 reward at (1,3)
+    \item \textbf{Wall}: Impassable obstacle at (1,1)
+    \item \textbf{Stochastic Transitions}: 0.8 probability of intended direction, 0.1 each for perpendicular directions
+    \item \textbf{Actions}: Up, Down, Left, Right
+\end{itemize}
+
+The Value Iteration update rule is:
+\begin{equation}
+V_{k+1}(s) = \max_a \sum_{s'} P(s'|s,a)[R(s,a,s') + \gamma V_k(s')]
+\end{equation}
+
+We solve for five different step costs: $r(s) \in \{-0.04, -2, 0.1, 0.02, 1\}$ with discount factor $\gamma = 1.0$.
+
+\subsection{Gbike Bicycle Rental}
+This problem models bike-sharing inventory management across two locations:
+\begin{itemize}
+    \item \textbf{States}: $(n_1, n_2)$ where $n_i \in [0, 20]$ represents bikes at location $i$
+    \item \textbf{Actions}: Net bikes moved from location 1 to 2, $a \in [-5, 5]$
+    \item \textbf{Dynamics}: Poisson-distributed requests ($\lambda_1=3, \lambda_2=4$) and returns ($\lambda_1=3, \lambda_2=2$)
+    \item \textbf{Rewards}: +INR 10 per rental, -INR 2 per bike moved
+    \item \textbf{Discount}: $\gamma = 0.9$
+\end{itemize}
+
+We use Policy Iteration, alternating between:
+\begin{enumerate}
+    \item \textbf{Policy Evaluation}: Compute $V^\pi$ for current policy $\pi$
+    \item \textbf{Policy Improvement}: Update $\pi(s) = \arg\max_a Q^\pi(s,a)$
+\end{enumerate}
+
+For efficiency, we precompute transition probabilities by exploiting the independence of locations.
+
+\subsection{Modified Gbike Problem}
+The modified version adds two realistic constraints:
+\begin{enumerate}
+    \item \textbf{Free Shuttle}: An employee transports 1 bike from location 1 to 2 for free each night
+    \item \textbf{Parking Overflow}: INR 4 cost if $>10$ bikes are kept overnight at a location
+\end{enumerate}
+
+These modifications affect the cost function:
+\begin{equation}
+C(s,a) = \begin{cases}
+(a-1) \times 2 & \text{if } a > 0 \\
+|a| \times 2 & \text{if } a \leq 0
+\end{cases} + 4 \times \mathbb{I}[n_1 > 10] + 4 \times \mathbb{I}[n_2 > 10]
+\end{equation}
+
+\section{Results}
+
+\subsection{Grid World Analysis}
+Fig.~\ref{fig:gridworld_neg004} shows the optimal policy for $r(s) = -0.04$, representing a small penalty per step. The agent takes the safest path to the +1 terminal state, avoiding the -1 state.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.85\linewidth]{visualizations/gridworld_step_cost_neg0.04.png}}
+\caption{Grid World with $r(s) = -0.04$: Balanced risk-averse policy.}
+\label{fig:gridworld_neg004}
+\end{figure}
+
+Fig.~\ref{fig:gridworld_neg2} demonstrates extreme behavior with $r(s) = -2$. The high step cost makes the agent rush to the nearest terminal state, even if it's the -1 penalty state.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.85\linewidth]{visualizations/gridworld_step_cost_neg2.png}}
+\caption{Grid World with $r(s) = -2$: Rushes to nearest terminal.}
+\label{fig:gridworld_neg2}
+\end{figure}
+
+Conversely, positive step costs ($r(s) = 0.1$ or $1$) incentivize wandering behavior, as shown in Fig.~\ref{fig:gridworld_pos1}, where the agent maximizes time before termination.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.85\linewidth]{visualizations/gridworld_step_cost_pos1.png}}
+\caption{Grid World with $r(s) = 1$: Wandering behavior to accumulate rewards.}
+\label{fig:gridworld_pos1}
+\end{figure}
+
+\subsection{Gbike Rental Results}
+The original Gbike problem converged in 4 iterations. Fig.~\ref{fig:gbike_policy} shows the optimal policy heatmap, where positive values indicate transfers from location 1 to location 2.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.85\linewidth]{visualizations/gbike_original_policy.png}}
+\caption{Optimal Policy for Original Gbike Problem.}
+\label{fig:gbike_policy}
+\end{figure}
+
+The policy transfers bikes from the surplus location (1) to the deficit location (2), with the magnitude decreasing as location 2's inventory increases. Fig.~\ref{fig:gbike_value} visualizes the value function, showing highest returns when both locations have balanced inventory.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.85\linewidth]{visualizations/gbike_original_value_heatmap.png}}
+\caption{Value Function Heatmap for Original Gbike Problem.}
+\label{fig:gbike_value}
+\end{figure}
+
+\subsection{Modified Gbike Comparison}
+The modified problem converged in 3 iterations. Fig.~\ref{fig:gbike_modified} shows the adjusted policy accounting for the free shuttle and parking costs.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.85\linewidth]{visualizations/gbike_modified_policy.png}}
+\caption{Optimal Policy for Modified Gbike Problem.}
+\label{fig:gbike_modified}
+\end{figure}
+
+Key observations:
+\begin{itemize}
+    \item More frequent single-bike transfers (exploiting free shuttle)
+    \item Avoidance of states with $>10$ bikes to minimize parking costs
+    \item Similar overall transfer strategy but with refined boundaries
+\end{itemize}
+
+\section{Conclusion}
+This lab demonstrated the effectiveness of Dynamic Programming for solving MDPs. Value Iteration successfully identified optimal policies across varying reward structures in the Grid World, illustrating how incentives shape agent behavior. Policy Iteration efficiently solved the complex Gbike Rental problem with Poisson dynamics, and the modified version showed how algorithmic solutions adapt to realistic operational constraints.
+
+The implementations highlight the power of model-based RL when environment dynamics are known. Future work could explore model-free approaches for scenarios where transition probabilities are unknown.
+
+\begin{thebibliography}{00}
+\bibitem{b1} R. S. Sutton and A. G. Barto, \textit{Reinforcement Learning: An Introduction}, 2nd ed. Cambridge, MA: MIT Press, 2018.
+\bibitem{b2} S. Russell and P. Norvig, \textit{Artificial Intelligence: A Modern Approach}, 3rd ed. Upper Saddle River, NJ: Prentice Hall, 2010.
+\end{thebibliography}
+
+\end{document}
